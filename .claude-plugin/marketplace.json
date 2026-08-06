@@ -1,0 +1,14 @@
+{
+  "name": "leveraging-ai-skills",
+  "owner": {
+    "name": "Dr. Erin Jacques",
+    "url": "https://www.skool.com/leveragingai/about"
+  },
+  "plugins": [
+    {
+      "name": "leveraging-ai",
+      "source": "./plugins/leveraging-ai",
+      "description": "Build AI-powered web apps you own. Includes build-assistant: a custom AI assistant with your instructions and knowledge, deployed to your own domain, optionally behind a Stripe paywall."
+    }
+  ]
+}
