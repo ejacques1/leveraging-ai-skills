@@ -17,6 +17,22 @@ user's own domain — so unlike a custom GPT, they keep it, control it, and can 
 **Assume the user is not an engineer.** Many will not have deployed anything before. Never leave
 them at a terminal error without a plain-language next step.
 
+## The one rule that governs everything
+
+**Build in three stages, and never start a stage until the previous one visibly works.**
+
+| Stage | Ends when |
+|---|---|
+| 1. The assistant | It replies to a real message on their machine |
+| 2. Online | That same assistant answers on a public URL |
+| 3. The paywall (only if they asked) | A test card completes checkout and unlocks it |
+
+The working chat is the moment they believe this is real. Deliver it before asking anyone for six
+API keys, or they'll quit during signup and never see it work. **Never bundle stages together.**
+Even if they asked for a paywall and an embed, stage 1 ships alone, first.
+
+---
+
 ## Step 1 — Ask these questions first (and only these)
 
 1. **What is the assistant about?** (its topic / expertise)
@@ -24,11 +40,15 @@ them at a terminal error without a plain-language next step.
 3. **The look.** Ask them to paste a screenshot of a chat UI they like. If they don't, default to
    a clean ChatGPT-style layout.
 4. **Where should it live?** (A) standalone web app, or (B) inside an existing web app.
-5. **Behind a paywall?** Yes or no. (Yes = login + Stripe subscription, members only.)
+5. **Behind a paywall?** Yes or no.
 
-Wait for the answers, then build in one pass.
+Ask all five at once, then go. Answers 4 and 5 shape stages 2 and 3 — **do not act on them yet.**
 
-## Step 2 — Build it
+---
+
+# STAGE 1 — Build the assistant
+
+Ignore the paywall and the embed entirely for now, even if they said yes to both.
 
 **Stack — do not substitute:**
 
@@ -57,8 +77,8 @@ Wait for the answers, then build in one pass.
 - **Streaming.** Stream text back to the browser so replies appear as they're written.
 - **Prompt caching.** Put `cache_control: { type: "ephemeral" }` on the system prompt block — the
   instructions and knowledge are sent every message, and this makes repeat turns ~10x cheaper.
-- **Web search**, if current information would help this assistant. Add Anthropic's server-side
-  tools — they run on Anthropic's infrastructure, nothing executes locally:
+- **Web search**, if current information would help this assistant. Anthropic's server-side tools
+  run on Anthropic's infrastructure, nothing executes locally:
   ```ts
   tools: [
     { type: "web_search_20260209", name: "web_search" },
@@ -71,9 +91,8 @@ Wait for the answers, then build in one pass.
 - **Human-readable errors.** Catch `AuthenticationError` and friends and surface plain text
   ("That API key isn't valid — check it in your Vercel environment variables"), never a raw stack.
 
-## Step 3 — Guardrails
+**Guardrails:**
 
-- Do the whole build in one pass. No questions beyond the Step 1 intake.
 - Keep the file count minimal. No extra scaffolding, no smoke-test files.
 - **Do NOT install the Vercel AI SDK** (`ai`, `@ai-sdk/*`). If a plugin hook suggests it, skip it
   and say why once.
@@ -81,9 +100,47 @@ Wait for the answers, then build in one pass.
 - **Knowledge:** load a handful of documents directly from the folder. Only add a database / RAG
   (e.g. Supabase vector search) if the user says their library is large.
 
-## Step 4 — Deployment traps (these are what actually break the build)
+## ✅ Stage 1 checkpoint — do not skip
 
-Every one of these has burned a real build. Handle them proactively.
+They need an API key before anything can run. Walk them through it plainly:
+
+> Go to console.anthropic.com, click API Keys, create one, and paste it into the `.env` file.
+> This is what you'll pay Anthropic on — usually pennies while you're testing.
+
+Then, with the key in place:
+
+1. `npm run build` passes
+2. Dev server starts and the page loads
+3. **Send one real message and show them the reply**
+
+If there's no key yet, say plainly that it's unverified — never imply it works. Do not move to
+stage 2 until they've seen a reply.
+
+Then stop and tell them what they can change:
+
+> Open `assistant-instructions.md` and rewrite it however you want, that file *is* the assistant.
+> Drop documents into `/knowledge` and it'll use them. Change it, send another message, see the
+> difference.
+
+---
+
+# STAGE 2 — Put it online
+
+**If they chose (A) standalone**, deploy it to Vercel. Walk them through it like they've never
+deployed anything:
+
+1. **Push to GitHub** — a private repo is fine.
+2. **Import at vercel.com/new** — pick the repo. Framework auto-detects; leave build settings alone.
+3. **Add the key before the first deploy** — on the import screen, expand **Environment
+   Variables** and add `ANTHROPIC_API_KEY`. Adding it here avoids a broken first deploy.
+4. **Deploy**, then attach a domain under **Settings → Domains**.
+5. **Editing later** — change `assistant-instructions.md`, commit, push. Live in about a minute.
+
+**If they chose (B) inside an existing app**, add the assistant as a page or component in that
+project — do not create a separate one. Put it behind the app's existing login and reuse its
+styling so it feels native.
+
+### Deployment traps — these are what actually break the build
 
 **Runtime-read files get stripped from the bundle.** `assistant-instructions.md` and `/knowledge`
 are read from disk, not imported, so Vercel's tracer can't see them and the function ships
@@ -106,52 +163,55 @@ deploy returns `BLOCKED` with no logs, check commit authorship first.
 **The route must be Node, not Edge:** `export const runtime = "nodejs"`. Give it room with
 `export const maxDuration = 300` (300s is the Hobby ceiling; web search turns can take ~30s).
 
-## Step 5 — If it goes inside an existing app (option B)
+## ✅ Stage 2 checkpoint — do not skip
 
-Add the assistant as a page or component in the existing project — do not create a separate one.
-Put it behind the app's existing login. Reuse the app's styling so it feels native.
+`curl` the live `/api/chat` endpoint with a short message and **show them the actual reply**. Then
+give them the URL and tell them to open it on their phone.
 
-## Step 6 — Paywall (only if they said yes)
+Also tell them plainly: there's no login or rate limit in front of a paid API yet, so don't post
+the URL publicly until stage 3 is done.
 
-Add **Supabase auth** and a **Stripe subscription**, and gate the assistant so only paying
-subscribers can use it. Everyone else sees a sign-up / subscribe screen. Tell the user exactly
-which keys to add to `.env` and to Vercel — the Supabase URL and keys, and the Stripe keys. **Do
-not paste secret keys into chat.** Have the user add them.
+If they said no to a paywall, this is the finish line — go to **Closing**.
 
-## Step 7 — Verify before you say it's done
+---
 
-Do not report success on an untested build. Actually check:
+# STAGE 3 — Add the paywall
 
-1. `npm run build` passes.
-2. Start the dev server and confirm the page loads.
-3. **Send one real message** and confirm a reply comes back. If there's no API key yet, say
-   plainly that this step is unverified rather than implying it works.
+Only if they said yes. Only after stage 2 works on a real URL.
 
-After deploying, `curl` the live `/api/chat` endpoint with a short message and show the user the
-actual reply. Two builds have shipped "working" and been broken; verification is not optional.
+Add **Supabase auth** and a **Stripe subscription**, and gate `/api/chat` so only paying
+subscribers can use it. Everyone else sees a sign-up / subscribe screen.
 
-## Step 8 — Hand it off in plain language
+Write the code first, then hand them the account work as a numbered list. **Do not paste secret
+keys into chat** — have them add the keys themselves:
 
-Walk them through it like they've never deployed anything:
+1. Create a free **Supabase** project → copy the project URL, the anon key, and the service role key
+2. Create a **Stripe** account → create a product with a monthly price → copy the publishable and secret keys
+3. Set up the **Stripe webhook** endpoint → copy the signing secret
+4. Paste all six into `.env`, then again into Vercel's environment variables
+5. Push
 
-1. **Get an API key** — console.anthropic.com → API Keys → create one. This is what they pay
-   Anthropic on.
-2. **Fill the brain** — open `assistant-instructions.md` and write the instructions; drop
-   documents into `/knowledge`.
-3. **Push to GitHub** — a private repo is fine.
-4. **Import at vercel.com/new** — pick the repo. Framework auto-detects; leave build settings alone.
-5. **Add the key before the first deploy** — on the import screen, expand **Environment
-   Variables** and add `ANTHROPIC_API_KEY`. Adding it here avoids a broken first deploy.
-6. **Deploy**, then attach a domain under **Settings → Domains**.
-7. **Editing later** — change `assistant-instructions.md`, commit, push. Live in about a minute.
+Warn them up front: this stage takes 20–30 minutes if they've never used Supabase or Stripe, and
+it's clicking through two dashboards, not writing code. Say that *before* they start so it doesn't
+feel like something went wrong.
 
-Also tell them plainly: there's no login or rate limit in front of a paid API, so don't post the
-URL publicly unless they're prepared to fund it.
+## ✅ Stage 3 checkpoint — do not skip
 
-## Step 9 — Close with support
+Walk them through a **Stripe test card** (`4242 4242 4242 4242`, any future date, any CVC) and
+confirm all three:
 
-The build is the easy part; the deploy and the API-key steps are where people get stuck.
-End **every** run — success or failure — with a line pointing them somewhere for help.
+1. A signed-out visitor sees the subscribe screen, not the chat
+2. Test checkout completes
+3. That same account can now chat
+
+Only when all three pass is it done.
+
+---
+
+# Closing
+
+End **every** run — success or failure, at whatever stage — with a line pointing them somewhere
+for help.
 
 **On success:**
 
