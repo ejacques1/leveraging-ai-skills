@@ -65,8 +65,14 @@ Ignore the paywall entirely for now, even if they said yes to it.
 
 - **Next.js** (App Router) + TypeScript
 - **`@anthropic-ai/sdk`** — the Anthropic API directly
-- **`claude-opus-5`** as the model
+- **`claude-sonnet-5`** as the model, with `output_config: { effort: "medium" }`
 - **`react-markdown` + `remark-gfm`** so the assistant's tables and headings render
+
+> **Don't ask them which model to use.** They can't answer it before anything exists, and it's a
+> question that costs you a beginner. Build on Sonnet 5 at medium effort: fast, roughly half the
+> price of Opus, and strong enough for almost every assistant people build here. Offer the upgrade
+> at the end of stage 1, once they've felt the speed. Opus 5 at high effort can take **three
+> minutes** on a web-search question, which reads as broken to someone who has never used this.
 
 > ⚠️ **Do NOT use `@anthropic-ai/claude-agent-sdk`.** It bundles the Claude Code CLI as a
 > ~260 MB native binary, which exceeds Vercel's 250 MB function limit — the deploy fails with
@@ -98,6 +104,11 @@ Ignore the paywall entirely for now, even if they said yes to it.
   ```
   Handle `stop_reason: "pause_turn"` by appending the assistant's content and re-requesting, up to
   ~5 times — long research turns hit the server-side tool cap and pause.
+- **Show what it's doing while tools run.** A web-search answer can take a minute or more, and
+  during that time the model writes nothing. Bouncing dots for 60+ seconds reads as frozen and
+  people close the tab. Stream a status line to the browser when a server tool starts — watch for
+  `server_tool_use` content blocks and send something like `Searching the web…` — then replace it
+  when the real text begins. This is not optional; silence is the single worst failure mode here.
 - Read the API key from **`.env`** (`ANTHROPIC_API_KEY`); also create `.env.example`. Gitignore `.env`.
 - **Human-readable errors.** Catch `AuthenticationError` and friends and surface plain text
   ("That API key isn't valid — check it in your Vercel environment variables"), never a raw stack.
@@ -137,11 +148,24 @@ Then, with the key in place:
 If there's no key yet, say plainly that it's unverified — never imply it works. Do not move to
 stage 2 until they've seen a reply.
 
-Then stop and tell them what they can change:
+Then **stop and hand them a clear fork.** Don't drift into stage 2 and don't leave them with a
+vague "next is deploying." Say this:
 
-> Open `assistant-instructions.md` and rewrite it however you want, that file *is* the assistant.
-> Drop documents into `/knowledge` and it'll use them. Change it, send another message, see the
-> difference.
+> **It's running at http://localhost:3000 — that's on your computer only, nobody else can reach it
+> yet.** Open it, send it a few messages, and get it behaving how you want:
+>
+> - `assistant-instructions.md` **is** the assistant. Rewrite any line, save, send another message,
+>   watch it change.
+> - Drop any document into `/knowledge` and it starts using it.
+>
+> Two dials if you want them: it's on **Claude Sonnet 5**, which is fast and inexpensive — say
+> *"switch it to Opus"* if you want it sharper on hard questions, and expect it to be slower.
+> Deep research questions take a minute or two either way.
+>
+> **When you're happy with it, say "put it online"** and I'll walk you through getting it on your
+> own domain.
+
+Then wait. Do not start stage 2 until they ask.
 
 ---
 
