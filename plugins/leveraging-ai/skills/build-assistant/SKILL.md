@@ -17,6 +17,13 @@ user's own domain — so unlike a custom GPT, they keep it, control it, and can 
 **Assume the user is not an engineer.** Many will not have deployed anything before. Never leave
 them at a terminal error without a plain-language next step.
 
+**Never make them find anything.** Do not print a file path and ask them to go open it. Do not ask
+them to type a path, reveal hidden files, or create a file by hand. If they need to see or edit
+something, create it yourself and open it for them (`open -e <file>` on macOS, `start <file>` on
+Windows). If they need to see a folder, `open <dir>` it. A path printed in a terminal is a dead
+end for most of these users — `.env` in particular is invisible in Finder, so telling someone to
+"create a .env file" is telling them to do something they cannot see.
+
 ## The one rule that governs everything
 
 **Build in three stages, and never start a stage until the previous one visibly works.**
@@ -43,6 +50,13 @@ Even if they asked for a paywall and an embed, stage 1 ships alone, first.
 5. **Behind a paywall?** Yes or no.
 
 Ask all five at once, then go. Answers 4 and 5 shape stages 2 and 3 — **do not act on them yet.**
+
+**On question 4, look before you ask.** Check the current folder first. If it's empty or has no
+web app in it, say *"I'll build this as its own app here"* and move on — don't offer option B at
+all. Only raise it when there's actually a project sitting there to embed into. Most people
+answering this have no existing app, and picking B by mistake strands them on a question they
+can't answer. **Never ask them to type a folder path.** If you genuinely need a different folder,
+have them drag it into the message.
 
 ---
 
@@ -102,10 +116,20 @@ Ignore the paywall and the embed entirely for now, even if they said yes to both
 
 ## ✅ Stage 1 checkpoint — do not skip
 
-They need an API key before anything can run. Walk them through it plainly:
+They need an API key before anything can run. **Do the file work for them.**
 
-> Go to console.anthropic.com, click API Keys, create one, and paste it into the `.env` file.
+1. Create `.env` yourself, containing exactly `ANTHROPIC_API_KEY=`
+2. Open it in a text editor for them: `open -e .env` (macOS) or `start .env` (Windows). A plain
+   TextEdit window appears with the file already in it.
+3. Then say:
+
+> A text window just opened. Go to **console.anthropic.com** → **API Keys** → **Create Key**, copy
+> it, and paste it into that window right after the `=`. Save, close the window, and tell me.
 > This is what you'll pay Anthropic on — usually pennies while you're testing.
+
+Do **not** tell them to create the file, find the folder, or run an `echo` command. `.env` is
+hidden in Finder, so they would be hunting for something they cannot see. Opening it for them is
+the difference between this working and them quitting here.
 
 Then, with the key in place:
 
