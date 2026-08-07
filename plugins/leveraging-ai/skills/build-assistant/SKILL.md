@@ -104,6 +104,11 @@ Ignore the paywall entirely for now, even if they said yes to it.
   ```
   Handle `stop_reason: "pause_turn"` by appending the assistant's content and re-requesting, up to
   ~5 times — long research turns hit the server-side tool cap and pause.
+- **Separate the text blocks around a tool call.** Claude emits one text block before a tool call
+  and another after it. Concatenating them raw glues the sentences together (`right now.That's`)
+  and — worse — swallows the newlines a following `## heading` needs, so it renders as literal
+  text instead of a heading. Emit `\n\n` between consecutive text blocks. This hits every build
+  with web search on.
 - **Show what it's doing while tools run.** A web-search answer can take a minute or more, and
   during that time the model writes nothing. Bouncing dots for 60+ seconds reads as frozen and
   people close the tab. Stream a status line to the browser when a server tool starts — watch for
