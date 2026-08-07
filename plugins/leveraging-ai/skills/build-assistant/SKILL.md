@@ -178,7 +178,10 @@ Then wait. Do not start stage 2 until they ask.
 
 Deploy it to Vercel. Walk them through it like they've never deployed anything:
 
-1. **Push to GitHub** — a private repo is fine.
+1. **Push to GitHub** — a private repo is fine. **If they have no GitHub account, or the `gh` CLI
+   isn't installed, do not print git commands at them.** Offer to install `gh` and log them in, or
+   walk them through creating the repo in the browser one click at a time. A lot of these users
+   have never made a GitHub account, so treat that as normal rather than an edge case.
 2. **Import at vercel.com/new** — pick the repo. Framework auto-detects; leave build settings alone.
 3. **Add the key before the first deploy** — on the import screen, expand **Environment
    Variables** and add `ANTHROPIC_API_KEY`. Adding it here avoids a broken first deploy.
