@@ -1,11 +1,11 @@
 ---
 name: build-assistant
 description: >
-  Build a custom AI assistant (a "custom GPT" the user actually owns) as a web app on the
-  Anthropic API. Use when the user wants to create their own branded AI chatbot/assistant with
-  custom instructions and knowledge, either standalone or added into an existing web app,
-  optionally behind a login and paywall. Triggers: "build a custom AI assistant", "create my own
-  custom GPT", "make a custom assistant in Claude", "turn my GPT into an app I own".
+  Build a custom AI assistant (a "custom GPT" the user actually owns) as a standalone web app on
+  the Anthropic API. Use when the user wants to create their own branded AI chatbot/assistant with
+  custom instructions and knowledge, deployed to their own domain, optionally behind a login and
+  paywall. Triggers: "build a custom AI assistant", "create my own custom GPT", "make a custom
+  assistant in Claude", "turn my GPT into an app I own".
 ---
 
 # Custom AI Assistant Builder
@@ -36,7 +36,7 @@ end for most of these users — `.env` in particular is invisible in Finder, so 
 
 The working chat is the moment they believe this is real. Deliver it before asking anyone for six
 API keys, or they'll quit during signup and never see it work. **Never bundle stages together.**
-Even if they asked for a paywall and an embed, stage 1 ships alone, first.
+Even if they asked for a paywall, stage 1 ships alone, first.
 
 ---
 
@@ -46,23 +46,20 @@ Even if they asked for a paywall and an embed, stage 1 ships alone, first.
 2. **How should it behave?** (personality, tone, what it helps people do). Offer to draft this.
 3. **The look.** Ask them to paste a screenshot of a chat UI they like. If they don't, default to
    a clean ChatGPT-style layout.
-4. **Where should it live?** (A) standalone web app, or (B) inside an existing web app.
-5. **Behind a paywall?** Yes or no.
+4. **Behind a paywall?** Yes or no.
 
-Ask all five at once, then go. Answers 4 and 5 shape stages 2 and 3 — **do not act on them yet.**
+Ask all four at once, then go. Answer 4 shapes stage 3 — **do not act on it yet.**
 
-**On question 4, look before you ask.** Check the current folder first. If it's empty or has no
-web app in it, say *"I'll build this as its own app here"* and move on — don't offer option B at
-all. Only raise it when there's actually a project sitting there to embed into. Most people
-answering this have no existing app, and picking B by mistake strands them on a question they
-can't answer. **Never ask them to type a folder path.** If you genuinely need a different folder,
-have them drag it into the message.
+**This builds a standalone app. Always.** Don't ask where it should live and don't offer to embed
+it into an existing project — that question strands people who don't have one, and the ones who
+do can ask for it themselves. Build it in the current folder. If that folder already has an app in
+it, say so and offer to make a new folder alongside rather than building on top of their work.
 
 ---
 
 # STAGE 1 — Build the assistant
 
-Ignore the paywall and the embed entirely for now, even if they said yes to both.
+Ignore the paywall entirely for now, even if they said yes to it.
 
 **Stack — do not substitute:**
 
@@ -150,8 +147,7 @@ Then stop and tell them what they can change:
 
 # STAGE 2 — Put it online
 
-**If they chose (A) standalone**, deploy it to Vercel. Walk them through it like they've never
-deployed anything:
+Deploy it to Vercel. Walk them through it like they've never deployed anything:
 
 1. **Push to GitHub** — a private repo is fine.
 2. **Import at vercel.com/new** — pick the repo. Framework auto-detects; leave build settings alone.
@@ -159,10 +155,6 @@ deployed anything:
    Variables** and add `ANTHROPIC_API_KEY`. Adding it here avoids a broken first deploy.
 4. **Deploy**, then attach a domain under **Settings → Domains**.
 5. **Editing later** — change `assistant-instructions.md`, commit, push. Live in about a minute.
-
-**If they chose (B) inside an existing app**, add the assistant as a page or component in that
-project — do not create a separate one. Put it behind the app's existing login and reuse its
-styling so it feels native.
 
 ### Deployment traps — these are what actually break the build
 

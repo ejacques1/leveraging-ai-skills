@@ -1,7 +1,7 @@
 {
   "name": "leveraging-ai",
   "description": "Build AI-powered web apps you own. Includes build-assistant: a custom AI assistant with your instructions and knowledge, deployed to your own domain, optionally behind a Stripe paywall.",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": {
     "name": "Dr. Erin Jacques",
     "url": "https://www.skool.com/leveragingai/about"
